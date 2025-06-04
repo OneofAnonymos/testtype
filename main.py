@@ -1,123 +1,53 @@
-import logging
-import os
-import json
-from telegram import Update
-from telegram.ext import (
-    ApplicationBuilder, CommandHandler, MessageHandler,
-    ContextTypes, filters
-)
+main.py
 
-TOKEN = os.getenv("YOUR_BOT_TOKEN")
-PROFILE_FILE = "profiles.json"
+from telegram import Update, ReplyKeyboardMarkup from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes import json import os
 
-logging.basicConfig(level=logging.INFO)
+سوالات MBTI (8 سؤال برای هر بعد 2 تا = 16 سؤال)
 
-# سؤالات مرحله‌ای
-questions = [
-    {
-        "text": "سوال 1: ترجیح می‌دی تعطیلات رو چطور بگذرونی؟\nA) توی خونه، با کتاب یا فیلم\nB) با دوستان، بیرون و شلوغ",
-        "trait": "introversion"
-    },
-    {
-        "text": "سوال 2: موقع تصمیم‌گیری بیشتر به چی تکیه می‌کنی؟\nA) منطق و تحلیل\nB) احساسات",
-        "trait": "logic"
-    },
-    {
-        "text": "سوال 3: وقتی کار مهمی داری...\nA) براش برنامه‌ریزی می‌کنی\nB) بدون برنامه انجامش می‌دی",
-        "trait": "planner"
-    },
-    {
-        "text": "سوال 4: توی گروه...\nA) بیشتر شنونده‌ای\nB) بیشتر رهبر یا فعال هستی",
-        "trait": "passive"
-    }
-]
+QUESTIONS = [ {"q": "در یک مهمانی شلوغ، بیشتر انرژی می‌گیری یا خسته می‌شی؟", "A": ("I", "خسته می‌شم و ترجیح می‌دم زود برگردم"), "B": ("E", "انرژی می‌گیرم و لذت می‌برم")}, {"q": "در زمان بیکاری ترجیح می‌دی تنها باشی یا با دیگران؟", "A": ("I", "تنهایی برای من شارژ کننده‌ست"), "B": ("E", "در کنار دیگران خوش می‌گذره")}, {"q": "در حل مسئله بیشتر به چی توجه می‌کنی؟", "A": ("S", "واقعیت‌ها و جزئیات"), "B": ("N", "ایده‌ها و احتمالات")}, {"q": "وقتی درباره چیزی فکر می‌کنی، تمرکزت روی چیه؟", "A": ("S", "حقایق موجود"), "B": ("N", "آنچه می‌تونه باشه")}, {"q": "موقع تصمیم‌گیری بیشتر به چی تکیه می‌کنی؟", "A": ("T", "منطق و تحلیل"), "B": ("F", "احساسات و همدلی")}, {"q": "اگه دوستت ازت مشورت بخواد...", "A": ("T", "واقع‌بینانه و منطقی نظر می‌دم"), "B": ("F", "اول احساسش رو درک می‌کنم")}, {"q": "کدوم جمله بهت نزدیک‌تره؟", "A": ("J", "برنامه‌ریزی و نظم"), "B": ("P", "انعطاف و آزاد بودن")}, {"q": "موقع کار یا درس...", "A": ("J", "برنامه دارم و طبق زمان‌بندی پیش می‌رم"), "B": ("P", "هر وقت حسش باشه انجام می‌دم")}, {"q": "تعطیلات رو چطور می‌گذرونی؟", "A": ("I", "ترجیح می‌دم با خودم یا جمع کوچیک باشم"), "B": ("E", "با جمع‌های بزرگ تفریحی")}, {"q": "موقع فکر کردن بیشتر دنبال...", "A": ("S", "واقعیت‌های ملموس"), "B": ("N", "معناها و احتمالات")}, {"q": "وقتی یکی اشتباه می‌کنه...", "A": ("T", "راستشو می‌گم حتی اگه ناراحت بشه"), "B": ("F", "سعی می‌کنم احساسش رو در نظر بگیرم")}, {"q": "برنامه‌هات رو چطور مدیریت می‌کنی؟", "A": ("J", "لیست و ساختارمند"), "B": ("P", "آزاد و بدون محدودیت")}, {"q": "دوست داری چطور زندگی کنی؟", "A": ("J", "قابل پیش‌بینی و منظم"), "B": ("P", "هیجان‌انگیز و بدون چارچوب")}, {"q": "در بحث و گفت‌وگو معمولاً...", "A": ("T", "تحلیلی و منطقی صحبت می‌کنم"), "B": ("F", "با همدلی و احساس پیش می‌رم")}, {"q": "وقتی کسی ازت سؤال می‌پرسه...", "A": ("S", "به واقعیت پاسخ می‌دم"), "B": ("N", "نگاه آینده‌نگر دارم")}, {"q": "وقتی وارد یه جمع جدید می‌شی...", "A": ("I", "کم‌کم گرم می‌گیرم"), "B": ("E", "سریع با همه ارتباط می‌گیرم")} ]
+
+TYPES = { "INTJ": "معمار – متفکر استراتژیک، ساکت و تحلیلی", "ENTP": "مبتکر – پر از ایده، عاشق بحث و ماجراجویی", "INFP": "میانجی – ایده‌آل‌گرا، مهربون و درون‌گرا", "ENFP": "قهرمان – خلاق، احساسی و اجتماعی", "ISTJ": "بازرس – دقیق، مسئولیت‌پذیر و قابل اعتماد", "ISFJ": "حامی – وفادار، مهربون و عمل‌گرا", "ESTP": "کارآفرین – پرجنب‌وجوش، با انرژی و واقع‌گرا", "ESFJ": "کنسول – اجتماعی، مسئولیت‌پذیر و دلسوز", # می‌تونی بقیه تیپ‌ها رو هم اضافه کنی }
 
 user_states = {}
 
-def load_profiles():
-    if not os.path.exists(PROFILE_FILE):
-        return {}
-    with open(PROFILE_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
+def get_mbti(answers): dim = {"I": 0, "E": 0, "S": 0, "N": 0, "T": 0, "F": 0, "J": 0, "P": 0} for d in answers: dim[d] += 1 return ("I" if dim["I"] > dim["E"] else "E") + 
+("S" if dim["S"] > dim["N"] else "N") + 
+("T" if dim["T"] > dim["F"] else "F") + 
+("J" if dim["J"] > dim["P"] else "P")
 
-def save_profiles(profiles):
-    with open(PROFILE_FILE, "w", encoding="utf-8") as f:
-        json.dump(profiles, f, ensure_ascii=False, indent=2)
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE): await update.message.reply_text("سلام! 🤖\nبه ربات آینه شخصیت خوش اومدی!\nبرای شروع تست MBTI، دستور /test رو بزن 🧠")
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("سلام! من آینه شخصیت هستم.\nاز دستور /mirror برای شروع تست شخصیت استفاده کن.")
+async def test(update: Update, context: ContextTypes.DEFAULT_TYPE): user_id = update.message.from_user.id user_states[user_id] = {"step": 0, "answers": []} await send_question(update, user_id)
 
-async def mirror(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = str(update.effective_user.id)
-    user_states[user_id] = {"step": 0, "answers": {}}
-    await update.message.reply_text("🚀 تست شخصیت شروع شد!\n" + questions[0]["text"])
+async def send_question(update, user_id): step = user_states[user_id]["step"] q = QUESTIONS[step] markup = ReplyKeyboardMarkup([["A", "B"]], one_time_keyboard=True, resize_keyboard=True) await update.message.reply_text(f"سؤال {step+1} از {len(QUESTIONS)}:\n{q['q']}\nA) {q['A'][1]}\nB) {q['B'][1]}", reply_markup=markup)
 
-async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = str(update.effective_user.id)
-    profiles = load_profiles()
-    if user_id not in profiles:
-        await update.message.reply_text("📭 هنوز تست شخصیت ندادی. از /mirror استفاده کن.")
-        return
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE): user_id = update.message.from_user.id text = update.message.text.strip().upper()
 
-    profile = profiles[user_id]
-    result = f"""🧠 پروفایل شخصیت تو:
-- درون‌گرایی/برون‌گرایی: {profile['introversion']}
-- منطقی/احساسی: {profile['logic']}
-- برنامه‌ریز/ماجراجو: {profile['planner']}
-- منفعل/فعال: {profile['passive']}"""
-    await update.message.reply_text(result)
+if user_id not in user_states:
+    await update.message.reply_text("برای شروع تست /test رو بزن.")
+    return
 
-async def handle_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = str(update.effective_user.id)
-    text = update.message.text.strip().upper()
+state = user_states[user_id]
+if text not in ["A", "B"]:
+    await update.message.reply_text("❗️لطفاً فقط A یا B جواب بده.")
+    return
 
-    if user_id not in user_states:
-        return
+question = QUESTIONS[state["step"]]
+state["answers"].append(question[text][0])
+state["step"] += 1
 
-    state = user_states[user_id]
-    step = state["step"]
+if state["step"] >= len(QUESTIONS):
+    mbti = get_mbti(state["answers"])
+    name = TYPES.get(mbti, "تیپ شخصیتی خاص و کمیاب")
+    await update.message.reply_text(f"✅ نتیجه تست شخصیت:\n🎭 تیپ تو: {mbti}\n🔹 توضیح: {name}")
+    del user_states[user_id]
+    profiles = json.load(open("profiles.json", "r")) if os.path.exists("profiles.json") else {}
+    profiles[str(user_id)] = mbti
+    json.dump(profiles, open("profiles.json", "w"), indent=2)
+else:
+    await send_question(update, user_id)
 
-    if text not in ["A", "B"]:
-        await update.message.reply_text("لطفاً فقط یکی از گزینه‌های A یا B رو انتخاب کن.")
-        return
+async def profile(update: Update, context: ContextTypes.DEFAULT_TYPE): user_id = str(update.message.from_user.id) if os.path.exists("profiles.json"): profiles = json.load(open("profiles.json", "r")) if user_id in profiles: mbti = profiles[user_id] name = TYPES.get(mbti, "تیپ شخصیتی خاص") await update.message.reply_text(f"📊 پروفایل تو:\n🧬 MBTI: {mbti}\n🔹 {name}") return await update.message.reply_text("❌ هنوز تست ندادی. با /test شروع کن.")
 
-    trait = questions[step]["trait"]
-    state["answers"][trait] = "A" if text == "A" else "B"
-    state["step"] += 1
+if name == "main": TOKEN = os.environ.get("BOT_TOKEN") app = ApplicationBuilder().token(TOKEN).build() app.add_handler(CommandHandler("start", start)) app.add_handler(CommandHandler("test", test)) app.add_handler(CommandHandler("profile", profile)) app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)) app.run_polling()
 
-    if state["step"] < len(questions):
-        next_q = questions[state["step"]]["text"]
-        await update.message.reply_text(next_q)
-    else:
-        profile = {
-            "introversion": "درون‌گرا" if state["answers"]["introversion"] == "A" else "برون‌گرا",
-            "logic": "منطقی" if state["answers"]["logic"] == "A" else "احساسی",
-            "planner": "برنامه‌ریز" if state["answers"]["planner"] == "A" else "ماجراجو",
-            "passive": "منفعل" if state["answers"]["passive"] == "A" else "فعال"
-        }
-        profiles = load_profiles()
-        profiles[user_id] = profile
-        save_profiles(profiles)
-
-        result = f"""✅ تست تموم شد! این تحلیل شخصیت توئه:
-- {profile['introversion']}
-- {profile['logic']}
-- {profile['planner']}
-- {profile['passive']}"""
-        await update.message.reply_text(result)
-        del user_states[user_id]
-
-async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
-    logging.error("⛔️ خطا:", exc_info=context.error)
-
-if __name__ == '__main__':
-    app = ApplicationBuilder().token(TOKEN).build()
-
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("mirror", mirror))
-    app.add_handler(CommandHandler("profile", profile))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_answer))
-    app.add_error_handler(error_handler)
-
-    print("🤖 ربات در حال اجراست...")
-    app.run_polling()
