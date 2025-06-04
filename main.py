@@ -1,20 +1,17 @@
 import os import json from telegram import Update, ReplyKeyboardMarkup from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
-بارگذاری توکن از متغیر محیطی رندر
+
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 
-وضعیت کاربران
 
 user_states = {} user_answers = {} user_results = {}
 
-سوالات تست MBTI (نمونه‌ای با تعداد زیادتر)
 
 survey_questions = [ ("در مهمانی‌ها ترجیح می‌دهید؟", ["با همه صحبت کنم (E)", "فقط با چند نفر خاص باشم (I)"]), ("بیشتر به واقعیت‌ها توجه دارید یا مفاهیم؟", ["واقعیت‌ها (S)", "مفاهیم (N)"]), ("تصمیماتتان بیشتر بر اساس؟", ["منطق (T)", "احساس (F)"]), ("ترجیح می‌دهید برنامه‌ریزی داشته باشید یا خودجوش باشید؟", ["برنامه‌ریزی (J)", "خودجوش (P)"]), ("ترجیح می‌دهم روزم را چگونه بگذرانم؟", ["با دیگران در تعامل باشم (E)", "تنهایی کار کنم (I)"]), ("در حل مشکلات بیشتر تمرکز دارید روی؟", ["تجربیات گذشته (S)", "ایده‌های نو (N)"]), ("در موقعیت‌های احساسی؟", ["سعی می‌کنم منطقی باشم (T)", "به احساساتم گوش می‌دهم (F)"]), ("در کارها؟", ["همه چیز طبق برنامه پیش برود (J)", "بر اساس موقعیت تصمیم می‌گیرم (P)"]), # سوالات بیشتری می‌توان اضافه کرد ]
 
 mbti_profiles = { "INTJ": { "strengths": "تحلیلی، آینده‌نگر، مستقل", "weaknesses": "لجباز، بیش‌ازحد درونگرا، انتقادی", "matches": "ENFP, ENTP", "similar": "INFJ, INTP", "anime": "L (Death Note)" }, "INFP": { "strengths": "خلاق، با احساس، آرمان‌گرا", "weaknesses": "بیش از حد احساساتی، حساس", "matches": "ENFJ, ENTJ", "similar": "ISFP, INFJ", "anime": "Shinji Ikari (Evangelion)" }, "INFJ": {"strengths": "درون‌گرا، بینش‌مند، عمیق", "weaknesses": "کمال‌گرا، گاهی منزوی", "matches": "ENFP, ENTP", "similar": "INTJ, INFP", "anime": "Itachi Uchiha (Naruto)"}, "INTP": {"strengths": "تحلیل‌گر، مبتکر، کنجکاو", "weaknesses": "دور از احساس، گاهی تنبل", "matches": "ENTP, INFP", "similar": "INTJ, ENTP", "anime": "Lain Iwakura (Serial Experiments Lain)"}, "ENFP": {"strengths": "شورمند، الهام‌بخش، خلاق", "weaknesses": "بی‌نظم، بیش‌فعال", "matches": "INFJ, INTJ", "similar": "ENFJ, INFP", "anime": "Naruto Uzumaki (Naruto)"}, "ENFJ": {"strengths": "رهبری، دلسوز، هدف‌مند", "weaknesses": "وابسته به تأیید، عجول", "matches": "INFP, ISFP", "similar": "ENFP, INFJ", "anime": "Tanjiro Kamado (Demon Slayer)"}, "ENTP": {"strengths": "پر انرژی، خلاق، زیرک", "weaknesses": "کم‌حوصله، اهل بحث", "matches": "INFJ, INFP", "similar": "ENTJ, ENFP", "anime": "Okabe Rintarou (Steins;Gate)"}, "ENTJ": {"strengths": "رهبری، تصمیم‌گیرنده، منطقی", "weaknesses": "سلطه‌گر، سخت‌گیر", "matches": "INFP, ISFP", "similar": "INTJ, ESTJ", "anime": "Light Yagami (Death Note)"}, "ISFJ": {"strengths": "وفادار، محتاط، فداکار", "weaknesses": "کناره‌گیر، از خودگذشته زیاد", "matches": "ESFP, ESTP", "similar": "ISTJ, INFJ", "anime": "Hinata Hyuga (Naruto)"}, "ISFP": {"strengths": "احساسی، آرام، انعطاف‌پذیر", "weaknesses": "پنهان‌کار، زود رنج", "matches": "ESFJ, ENFJ", "similar": "INFP, ISFJ", "anime": "Yuki Sohma (Fruits Basket)"}, "ISTJ": {"strengths": "وظیفه‌شناس، منظم، واقع‌گرا", "weaknesses": "لجباز، سرد", "matches": "ESFP, ESTP", "similar": "ISFJ, INTJ", "anime": "Levi Ackerman (Attack on Titan)"}, "ISTP": {"strengths": "تحلیل‌گر، مستقل، اهل عمل", "weaknesses": "بی‌احساس، منزوی", "matches": "ESFP, ESTP", "similar": "INTP, ESTP", "anime": "Spike Spiegel (Cowboy Bebop)"}, "ESFJ": {"strengths": "اجتماعی، مهربان، وفادار", "weaknesses": "بیش‌ازحد نگران نظر دیگران", "matches": "ISFP, INFP", "similar": "ENFJ, ISFJ", "anime": "Tohru Honda (Fruits Basket)"}, "ESFP": {"strengths": "ماجراجو، خونگرم، سرگرم‌کننده", "weaknesses": "بی‌برنامه، سطحی", "matches": "ISFJ, ISTJ", "similar": "ENFP, ESFJ", "anime": "Narumi Momose (Wotakoi)"}, "ESTJ": {"strengths": "سازمان‌دهنده، قاطع، کارآمد", "weaknesses": "خشک، کنترل‌گر", "matches": "ISTP, ISFP", "similar": "ENTJ, ESTP", "anime": "Asuka Langley (Evangelion)"}, "ESTP": {"strengths": "اهل عمل، ریسک‌پذیر، واقع‌گرا", "weaknesses": "بی‌فکر، کم‌حوصله", "matches": "ISFP, INFP", "similar": "ISTP, ESTJ", "anime": "Bakugo (My Hero Academia)"}, }
 
-محاسبه تیپ MBTI
 
 def calculate_mbti(answers): counts = {"E": 0, "I": 0, "S": 0, "N": 0, "T": 0, "F": 0, "J": 0, "P": 0} for a in answers: code = a.split("(")[-1].strip(")") if code in counts: counts[code] += 1 return ("E" if counts["E"] >= counts["I"] else "I") + 
 ("S" if counts["S"] >= counts["N"] else "N") + 
