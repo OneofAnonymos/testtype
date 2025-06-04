@@ -1,6 +1,6 @@
 import os import json from telegram import Update, ReplyKeyboardMarkup from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes from telegram.constants import ParseMode
 
-بارگذاری پروفایل تیپ‌ها از فایل json
+
 
 with open("mbti_profiles.json", "r", encoding="utf-8") as f: mbti_data = json.load(f)
 
